@@ -50,10 +50,10 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
   let backgroundColorObj = getSolidColorFromFills(radioInstance.fills) || { r: 0, g: 0, b: 0, a: 0 };
   const backgroundHex = backgroundColorObj.a > 0 ? rgbaToHex(backgroundColorObj.r, backgroundColorObj.g, backgroundColorObj.b, backgroundColorObj.a) : 'transparent';
 
-  // Extract border properties
-  let borderColorObj = getSolidColorFromStrokes(finalShapeNode.strokes) || { r: 0.1725490242242813, g: 0.1725490242242813, b: 0.1725490242242813, a: 1 };
+  // Extract border properties from root instance
+  let borderColorObj = getSolidColorFromStrokes(radioInstance.strokes) || { r: 0.1725490242242813, g: 0.1725490242242813, b: 0.1725490242242813, a: 1 };
   const borderHex = rgbaToHex(borderColorObj.r, borderColorObj.g, borderColorObj.b, borderColorObj.a);
-  const borderWidthPx = finalShapeNode.strokeWeight || 0;
+  const borderWidthPx = radioInstance.strokeWeight || 0;
 
   // Extract properties
   const size = getPropertyValue(props, "Size", "md").toLowerCase();

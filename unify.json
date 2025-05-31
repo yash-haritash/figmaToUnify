@@ -11,23 +11,23 @@
         },
         "styles": {
           "padding": {
-            "all": "0px"
+            "all": "10px"
           },
           "margin": {
             "all": "0px"
           },
           "backgroundColor": "#FF0000",
-          "borderColor": "#2C2C2C",
+          "borderColor": "#000000",
           "borderWidth": {
-            "all": "1px"
+            "all": "10px"
           },
           "width": "340px",
-          "height": "44px"
+          "height": "76px"
         },
         "label": {
           "color": "#1E1E1E",
-          "variant": "16px",
-          "weight": "400"
+          "variant": "24px",
+          "weight": "200"
         }
       },
       "content": {
