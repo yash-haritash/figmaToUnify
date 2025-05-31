@@ -1,5 +1,68 @@
 const fs = require('fs').promises;
 
+// Border size token mapping (in pixels)
+const borderSizeTokens = {
+  'border-0': 0,
+  'border-1': 1,
+  'border-2': 2,
+  'border-3': 3,
+  'border-4': 4
+};
+
+// Font weight token mapping (numeric to named)
+const fontWeightTokens = [
+  { range: [100, 200], token: 'light' },
+  { range: [300, 400], token: 'regular' },
+  { range: [500, 500], token: 'medium' },
+  { range: [600, 600], token: 'semi-bold' },
+  { range: [700, 900], token: 'bold' }
+];
+
+// Variant (font size) token mapping (in pixels)
+const fontSizeTokens = {
+  'text-xxxs': 10,
+  'text-xxs': 11,
+  'text-xs': 12,
+  'text-sm': 14,
+  'text-md': 16,
+  'text-lg': 18,
+  'text-xl': 20,
+  'display-xs': 24,
+  'display-sm': 30,
+  'display-md': 44,
+  'display-lg': 48,
+  'display-xl': 60,
+  'display-2xl': 72
+};
+
+// Function to map pixel size to the closest smaller border size token
+function mapToBorderSizeToken(pxSize) {
+  const sizes = Object.entries(borderSizeTokens);
+  const largerSize = sizes.find(([_, size]) => size > pxSize);
+  if (!largerSize) return sizes[sizes.length - 1][0]; // Use largest if pxSize exceeds all
+  const largerIndex = sizes.indexOf(largerSize);
+  if (largerIndex === 0) return sizes[0][0]; // Use smallest if pxSize is less than all
+  const justSmaller = sizes[largerIndex - 1];
+  return justSmaller[1] === pxSize ? justSmaller[0] : justSmaller[0];
+}
+
+// Function to map numeric weight to font weight token
+function mapToFontWeightToken(weight) {
+  const mapping = fontWeightTokens.find(({ range }) => weight >= range[0] && weight <= range[1]);
+  return mapping ? mapping.token : 'regular'; // Default to 'regular' if no match
+}
+
+// Function to map pixel size to the closest smaller font size token
+function mapToFontSizeToken(pxSize) {
+  const sizes = Object.entries(fontSizeTokens);
+  const largerSize = sizes.find(([_, size]) => size > pxSize);
+  if (!largerSize) return sizes[sizes.length - 1][0]; // Use largest if pxSize exceeds all
+  const largerIndex = sizes.indexOf(largerSize);
+  if (largerIndex === 0) return sizes[0][0]; // Use smallest if pxSize is less than all
+  const justSmaller = sizes[largerIndex - 1];
+  return justSmaller[1] === pxSize ? justSmaller[0] : justSmaller[0];
+}
+
 async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
   // Helper function to convert RGBA to hex
   function rgbaToHex(r, g, b, a) {
@@ -71,17 +134,22 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
   const labelFontWeight = finalTextNode.style?.fontWeight || (finalTextNode.boundVariables?.fontWeight?.[0]?.id ? finalTextNode.style?.fontWeight : 0);
   const descriptionFontWeight = finalSupportingTextNode.style?.fontWeight || (finalSupportingTextNode.boundVariables?.fontWeight?.[0]?.id ? finalSupportingTextNode.style?.fontWeight : 0);
 
+  // Map to tokens
+  const labelVariant = mapToFontSizeToken(labelFontSize);
+  const descriptionVariant = mapToFontSizeToken(descriptionFontSize);
+  const labelWeight = mapToFontWeightToken(labelFontWeight);
+  const descriptionWeight = mapToFontWeightToken(descriptionFontWeight);
+  const borderWidthToken = { all: mapToBorderSizeToken(borderWidthPx) };
+
   // Map layout properties
   const widthPx = Math.round(radioInstance.absoluteBoundingBox?.width || 0);
   const heightPx = Math.round(radioInstance.absoluteBoundingBox?.height || 0);
-  // Use padding properties, no margin mapping
   const paddingPx = radioInstance.paddingTop ?? radioInstance.paddingBottom ?? radioInstance.paddingLeft ?? radioInstance.paddingRight ?? 0;
   const marginPx = 0;
   const widthClass = widthPx ? `${widthPx}px` : "0px";
   const heightClass = heightPx ? `${heightPx}px` : "0px";
   const paddingToken = paddingPx ? { all: `${paddingPx}px` } : { all: "0px" };
   const marginToken = { all: "0px" };
-  const borderWidthToken = borderWidthPx ? { all: `${borderWidthPx}px` } : { all: "0px" };
 
   // Build content object
   const content = {};
@@ -98,8 +166,8 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
           size,
           description: {
             color: isDisabled ? '#CCCCCC' : descriptionHex,
-            variant: `${descriptionFontSize}px`,
-            weight: `${descriptionFontWeight}`
+            variant: descriptionVariant,
+            weight: descriptionWeight
           },
           styles: {
             padding: paddingToken,
@@ -112,8 +180,8 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
           },
           label: {
             color: isDisabled ? '#CCCCCC' : labelHex,
-            variant: `${labelFontSize}px`,
-            weight: `${labelFontWeight}`
+            variant: labelVariant,
+            weight: labelWeight
           }
         },
         content
