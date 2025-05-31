@@ -15,48 +15,63 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
   const nodeKey = Object.keys(nodes)[0];
   if (!nodeKey) throw new Error('No nodes found in Figma JSON');
   const radioInstance = nodes[nodeKey]?.document || {};
-  if (!radioInstance) throw new Error('Radio Field instance not found');
+  if (!radioInstance) throw new Error('Component instance not found');
   const props = radioInstance.componentProperties || {};
 
   // Find child frames and nodes
+  // For Checkbox structure
+  const textFrame = radioInstance.children?.find(child => child.name === "Text and supporting text")?.children || [];
+  const inputFrame = radioInstance.children?.find(child => child.name === "Input")?.children || [];
+  const textNode = textFrame.find(child => child.name === "Text") || {};
+  const supportingTextNode = textFrame.find(child => child.name === "Supporting text") || {};
+  const checkboxBaseNode = inputFrame.find(child => child.name === "_Checkbox base") || {};
+
+  // For Radio Field structure
   const checkboxFrame = radioInstance.children?.find(child => child.name === "Checkbox and Label")?.children || [];
   const descriptionFrame = radioInstance.children?.find(child => child.name === "Description Row")?.children || [];
-  const textNode = checkboxFrame.find(child => child.name === "Label") || {};
-  const supportingTextNode = descriptionFrame.find(child => child.name === "Description") || {};
+  const radioFieldTextNode = checkboxFrame.find(child => child.name === "Label") || {};
+  const radioFieldSupportingTextNode = descriptionFrame.find(child => child.name === "Description") || {};
   const radioShapeNode = checkboxFrame.find(child => child.name === "Radio") || {};
 
+  // Use Checkbox structure if available, else Radio Field
+  const finalTextNode = textNode.id ? textNode : radioFieldTextNode;
+  const finalSupportingTextNode = supportingTextNode.id ? supportingTextNode : radioFieldSupportingTextNode;
+  const finalShapeNode = checkboxBaseNode.id ? checkboxBaseNode : radioShapeNode;
+
   // Extract label color
-  let labelColorObj = getSolidColorFromFills(textNode.fills) || { r: 0.11764705926179886, g: 0.11764705926179886, b: 0.11764705926179886, a: 1 };
+  let labelColorObj = getSolidColorFromFills(finalTextNode.fills) || { r: 0.11764705926179886, g: 0.11764705926179886, b: 0.11764705926179886, a: 1 };
   const labelHex = rgbaToHex(labelColorObj.r, labelColorObj.g, labelColorObj.b, labelColorObj.a);
 
   // Extract description color
-  let descriptionColorObj = getSolidColorFromFills(supportingTextNode.fills) || { r: 0.4588235318660736, g: 0.4588235318660736, b: 0.4588235318660736, a: 1 };
+  let descriptionColorObj = getSolidColorFromFills(finalSupportingTextNode.fills) || { r: 0.4588235318660736, g: 0.4588235318660736, b: 0.4588235318660736, a: 1 };
   const descriptionHex = rgbaToHex(descriptionColorObj.r, descriptionColorObj.g, descriptionColorObj.b, descriptionColorObj.a);
 
   // Extract border color
-  let borderColorObj = getSolidColorFromStrokes(radioShapeNode.strokes) || { r: 0.1725490242242813, g: 0.1725490242242813, b: 0.1725490242242813, a: 1 };
+  let borderColorObj = getSolidColorFromStrokes(finalShapeNode.strokes) || { r: 0.1725490242242813, g: 0.1725490242242813, b: 0.1725490242242813, a: 1 };
   const borderHex = rgbaToHex(borderColorObj.r, borderColorObj.g, borderColorObj.b, borderColorObj.a);
 
   // Extract properties
   const size = getPropertyValue(props, "Size", "md").toLowerCase();
   const isDisabled = getPropertyValue(props, "State") === "Disabled";
-  const checked = getPropertyValue(props, "Value Type") === "Checked";
-  const label = overrides.label || getPropertyValue(props, "Label") || textNode.characters || "";
-  const description = overrides.description || getPropertyValue(props, "Description") || supportingTextNode.characters || "";
+  const checked = getPropertyValue(props, "Checked") === "True" || getPropertyValue(props, "Value Type") === "Checked";
+  // Prioritize node characters over componentProperties
+  const label = overrides.label || finalTextNode.characters || getPropertyValue(props, "Text") || getPropertyValue(props, "Label") || "";
+  const description = overrides.description || finalSupportingTextNode.characters || getPropertyValue(props, "Hint Text") || getPropertyValue(props, "Description") || "";
   const defaultValue = overrides.defaultValue || getPropertyValue(props, "DefaultValue");
   const id = overrides.id || generateId("terms-radio-");
 
-  // Map font weight and size (in px)
-  const labelFontSize = textNode.style?.fontSize || 0; // No hardcoded fallback
-  const descriptionFontSize = supportingTextNode.style?.fontSize || 0; // No hardcoded fallback
-  const fontWeight = textNode.style?.fontWeight || supportingTextNode.style?.fontWeight || 400;
+  // Map font size and weight
+  const labelFontSize = finalTextNode.style?.fontSize || 0;
+  const descriptionFontSize = finalSupportingTextNode.style?.fontSize || 0;
+  const labelFontWeight = finalTextNode.style?.fontWeight || (finalTextNode.boundVariables?.fontWeight?.[0]?.id ? finalTextNode.style?.fontWeight : 0);
+  const descriptionFontWeight = finalSupportingTextNode.style?.fontWeight || (finalSupportingTextNode.boundVariables?.fontWeight?.[0]?.id ? finalSupportingTextNode.style?.fontWeight : 0);
 
-  // Map layout properties (all in px)
+  // Map layout properties
   const widthPx = Math.round(radioInstance.absoluteBoundingBox?.width || 0);
   const heightPx = Math.round(radioInstance.absoluteBoundingBox?.height || 0);
-  const paddingPx = radioInstance.itemSpacing || 0;
-  const marginPx = 0; // No hardcoded margin
-  const borderWidthPx = radioShapeNode.strokeWeight || 0;
+  const paddingPx = radioInstance.itemSpacing || inputFrame[0]?.paddingTop || 0;
+  const marginPx = 0;
+  const borderWidthPx = finalShapeNode.strokeWeight || 0;
   const widthClass = widthPx ? `${widthPx}px` : "0px";
   const heightClass = heightPx ? `${heightPx}px` : "0px";
   const paddingToken = paddingPx ? { all: `${paddingPx}px` } : { all: "0px" };
@@ -79,7 +94,7 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
           description: {
             color: isDisabled ? '#CCCCCC' : descriptionHex,
             variant: `${descriptionFontSize}px`,
-            weight: `${fontWeight}`
+            weight: `${descriptionFontWeight}`
           },
           styles: {
             padding: paddingToken,
@@ -92,7 +107,7 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
           label: {
             color: isDisabled ? '#CCCCCC' : labelHex,
             variant: `${labelFontSize}px`,
-            weight: `${fontWeight}`
+            weight: `${labelFontWeight}`
           }
         },
         content
