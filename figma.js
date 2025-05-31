@@ -1,6 +1,6 @@
 const fs = require('fs')
 const UNIFY_API_URL = 'https://api.qa.unifyapps.com/api-endpoint/figma/Fetch-Figma-Details';
-const FIGMA_URL = 'https://www.figma.com/design/Ds8Yg31cA9zC8QDwPfBiPs/Untitled?node-id=24-46&t=wgbaIlgGzBmNnqz7-4';
+const FIGMA_URL = 'https://www.figma.com/design/4r7C2sI9cktH4T8atJhmrW/Component-Sheet?node-id=1-5780&t=5pGcXXUh8vqiyqPP-4';
 
 async function fetchFigmaData() {
   const data = { fileUrl: FIGMA_URL };

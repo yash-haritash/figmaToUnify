@@ -46,10 +46,10 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
   let descriptionColorObj = getSolidColorFromFills(finalSupportingTextNode.fills) || { r: 0.4588235318660736, g: 0.4588235318660736, b: 0.4588235318660736, a: 1 };
   const descriptionHex = rgbaToHex(descriptionColorObj.r, descriptionColorObj.g, descriptionColorObj.b, descriptionColorObj.a);
 
-  // Extract border properties (prefer root instance)
-  let borderColorObj = getSolidColorFromStrokes(radioInstance.strokes) || getSolidColorFromStrokes(finalShapeNode.strokes) || { r: 0.1725490242242813, g: 0.1725490242242813, b: 0.1725490242242813, a: 1 };
+  // Extract border properties
+  let borderColorObj = getSolidColorFromStrokes(finalShapeNode.strokes) || { r: 0.1725490242242813, g: 0.1725490242242813, b: 0.1725490242242813, a: 1 };
   const borderHex = rgbaToHex(borderColorObj.r, borderColorObj.g, borderColorObj.b, borderColorObj.a);
-  const borderWidthPx = radioInstance.strokes?.length > 0 ? radioInstance.strokeWeight || 0 : finalShapeNode.strokeWeight || 0;
+  const borderWidthPx = finalShapeNode.strokeWeight || 0;
 
   // Extract properties
   const size = getPropertyValue(props, "Size", "md").toLowerCase();
@@ -70,12 +70,13 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
   // Map layout properties
   const widthPx = Math.round(radioInstance.absoluteBoundingBox?.width || 0);
   const heightPx = Math.round(radioInstance.absoluteBoundingBox?.height || 0);
-  const paddingPx = radioInstance.itemSpacing || inputFrame[0]?.paddingTop || 0;
+  // Use padding properties, no margin mapping
+  const paddingPx = radioInstance.paddingTop ?? radioInstance.paddingBottom ?? radioInstance.paddingLeft ?? radioInstance.paddingRight ?? 0;
   const marginPx = 0;
   const widthClass = widthPx ? `${widthPx}px` : "0px";
   const heightClass = heightPx ? `${heightPx}px` : "0px";
   const paddingToken = paddingPx ? { all: `${paddingPx}px` } : { all: "0px" };
-  const marginToken = marginPx ? { all: `${marginPx}px` } : { all: "0px" };
+  const marginToken = { all: "0px" };
   const borderWidthToken = borderWidthPx ? { all: `${borderWidthPx}px` } : { all: "0px" };
 
   // Build content object
