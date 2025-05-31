@@ -1,0 +1,45 @@
+{"b_gcanj": {
+                        "component": {
+                            "componentType": "RadioButton",
+                            "appearance": {
+                                "size": "sm",
+                                "description": {
+                                    "color": "text-secondary",
+                                    "variant": "text-xxs",
+                                    "weight": "regular"
+                                },
+                                "styles": {
+                                    "padding": {
+                                        "all": "p-3xl"
+                                    },
+                                    "margin": {
+                                        "all": "m-lg"
+                                    },
+                                    "borderColor": "border-transparent",
+                                    "borderWidth": {
+                                        "all": "border-2"
+                                    },
+                                    "width": "w-[360px]",
+                                    "height": "h-[360px]"
+                                },
+                                "label": {
+                                    "color": "text-palette-warning-800",
+                                    "variant": "text-sm",
+                                    "weight": "medium"
+                                }
+                            },
+                            "content": {
+                                "defaultValue": "hj\n",
+                                "description": "Add descriptuon\n",
+                                "label": "New Radio Button"
+                            }
+                        },
+                        "visibility": {
+                            "value": true
+                        },
+                        "dpOn": [],
+                        "displayName": "RadioButton_1",
+                        "dataSourceIds": [],
+                        "id": "b_gcanj",
+                        "parentId": "root_id"
+                    }}

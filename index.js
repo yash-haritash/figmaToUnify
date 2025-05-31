@@ -1,0 +1,170 @@
+const fs = require('fs').promises;
+
+async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
+  // Helper function to convert RGBA to hex
+  function rgbaToHex(r, g, b, a) {
+    const toHex = (value) => {
+      const hex = Math.round(value * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}${a < 1 ? toHex(a) : ""}`.toUpperCase();
+  }
+
+  // Extract nodes
+  const nodes = figmaJson.Result?.nodes || figmaJson.nodes || {};
+  const nodeKey = Object.keys(nodes)[0];
+  if (!nodeKey) throw new Error('No nodes found in Figma JSON');
+  const radioInstance = nodes[nodeKey]?.document || {};
+  if (!radioInstance) throw new Error('Radio Field instance not found');
+  const props = radioInstance.componentProperties || {};
+
+  // Find child frames and nodes
+  const checkboxFrame = radioInstance.children?.find(child => child.name === "Checkbox and Label")?.children || [];
+  const descriptionFrame = radioInstance.children?.find(child => child.name === "Description Row")?.children || [];
+  const textNode = checkboxFrame.find(child => child.name === "Label") || {};
+  const supportingTextNode = descriptionFrame.find(child => child.name === "Description") || {};
+  const radioShapeNode = checkboxFrame.find(child => child.name === "Radio") || {};
+
+  // Extract label color
+  let labelColorObj = getSolidColorFromFills(textNode.fills) || { r: 0.11764705926179886, g: 0.11764705926179886, b: 0.11764705926179886, a: 1 };
+  const labelHex = rgbaToHex(labelColorObj.r, labelColorObj.g, labelColorObj.b, labelColorObj.a);
+
+  // Extract description color
+  let descriptionColorObj = getSolidColorFromFills(supportingTextNode.fills) || { r: 0.4588235318660736, g: 0.4588235318660736, b: 0.4588235318660736, a: 1 };
+  const descriptionHex = rgbaToHex(descriptionColorObj.r, descriptionColorObj.g, descriptionColorObj.b, descriptionColorObj.a);
+
+  // Extract border color
+  let borderColorObj = getSolidColorFromStrokes(radioShapeNode.strokes) || { r: 0.1725490242242813, g: 0.1725490242242813, b: 0.1725490242242813, a: 1 };
+  const borderHex = rgbaToHex(borderColorObj.r, borderColorObj.g, borderColorObj.b, borderColorObj.a);
+
+  // Extract properties
+  const size = getPropertyValue(props, "Size", "md").toLowerCase();
+  const isDisabled = getPropertyValue(props, "State") === "Disabled";
+  const checked = getPropertyValue(props, "Value Type") === "Checked";
+  const label = overrides.label || getPropertyValue(props, "Label") || textNode.characters || "";
+  const description = overrides.description || getPropertyValue(props, "Description") || supportingTextNode.characters || "";
+  const defaultValue = overrides.defaultValue || getPropertyValue(props, "DefaultValue");
+  const id = overrides.id || generateId("terms-radio-");
+
+  // Map font weight and size (in px)
+  const labelFontSize = textNode.style?.fontSize || 0; // No hardcoded fallback
+  const descriptionFontSize = supportingTextNode.style?.fontSize || 0; // No hardcoded fallback
+  const fontWeight = textNode.style?.fontWeight || supportingTextNode.style?.fontWeight || 400;
+
+  // Map layout properties (all in px)
+  const widthPx = Math.round(radioInstance.absoluteBoundingBox?.width || 0);
+  const heightPx = Math.round(radioInstance.absoluteBoundingBox?.height || 0);
+  const paddingPx = radioInstance.itemSpacing || 0;
+  const marginPx = 0; // No hardcoded margin
+  const borderWidthPx = radioShapeNode.strokeWeight || 0;
+  const widthClass = widthPx ? `${widthPx}px` : "0px";
+  const heightClass = heightPx ? `${heightPx}px` : "0px";
+  const paddingToken = paddingPx ? { all: `${paddingPx}px` } : { all: "0px" };
+  const marginToken = marginPx ? { all: `${marginPx}px` } : { all: "0px" };
+  const borderWidthToken = borderWidthPx ? { all: `${borderWidthPx}px` } : { all: "0px" };
+
+  // Build content object
+  const content = {};
+  if (label) content.label = label;
+  if (description) content.description = description;
+  if (defaultValue) content.defaultValue = defaultValue;
+  content.checked = checked;
+
+  return {
+    [id]: {
+      component: {
+        componentType: "RadioButton",
+        appearance: {
+          size,
+          description: {
+            color: isDisabled ? '#CCCCCC' : descriptionHex,
+            variant: `${descriptionFontSize}px`,
+            weight: `${fontWeight}`
+          },
+          styles: {
+            padding: paddingToken,
+            margin: marginToken,
+            borderColor: isDisabled ? '#CCCCCC' : borderHex,
+            borderWidth: borderWidthToken,
+            width: widthClass,
+            height: heightClass
+          },
+          label: {
+            color: isDisabled ? '#CCCCCC' : labelHex,
+            variant: `${labelFontSize}px`,
+            weight: `${fontWeight}`
+          }
+        },
+        content
+      },
+      visibility: {
+        value: !isDisabled
+      },
+      dpOn: mapInteractions(radioInstance),
+      displayName: overrides.displayName || generateDisplayName("RadioButton"),
+      dataSourceIds: [],
+      id,
+      parentId: "root_id"
+    }
+  };
+}
+
+// Helper Functions
+function getSolidColorFromFills(fills) {
+  if (Array.isArray(fills)) {
+    const solid = fills.find(f => f.type === 'SOLID' && (f.visible === undefined || f.visible === true));
+    if (solid && solid.color) return solid.color;
+  }
+  return null;
+}
+
+function getSolidColorFromStrokes(strokes) {
+  if (Array.isArray(strokes)) {
+    const solid = strokes.find(f => f.type === 'SOLID' && (f.visible === undefined || f.visible === true));
+    if (solid && solid.color) return solid.color;
+  }
+  return null;
+}
+
+function getPropertyValue(props, propName, defaultValue = undefined) {
+  return props[propName]?.value ?? defaultValue;
+}
+
+function generateDisplayName(baseName) {
+  return `${baseName}_${Math.random().toString(36).substring(2, 7)}`;
+}
+
+function generateId(prefix = '') {
+  return `${prefix}${Math.random().toString(36).substring(2, 9)}`;
+}
+
+function mapInteractions(node) {
+  const interactions = [];
+  if (node.interactions?.length > 0) {
+    node.interactions.forEach(i => {
+      if (i.trigger?.type === 'ON_CLICK') {
+        interactions.push({ event: 'click', action: 'toggle' });
+      } else if (i.trigger?.type === 'ON_HOVER' || i.trigger?.type === 'MOUSE_ENTER') {
+        interactions.push({ event: 'hover', action: 'highlight' });
+      }
+    });
+  }
+  return interactions.length ? interactions : [];
+}
+
+async function main() {
+  try {
+    const figmaJson = JSON.parse(await fs.readFile('figma.json', 'utf8'));
+    const unifyOutput = await convertFigmaRadioButtonToUnify(figmaJson, {
+      id: "terms-radio-1",
+      displayName: "RadioButton_0d5ph"
+    });
+    await fs.writeFile('unify.json', JSON.stringify(unifyOutput, null, 2), 'utf8');
+    console.log('Unify output saved to unify.json');
+  } catch (error) {
+    console.error('Error processing figma.json:', error);
+    process.exit(1);
+  }
+}
+
+main();

@@ -1,0 +1,47 @@
+{
+  "terms-radio-1": {
+    "component": {
+      "componentType": "RadioButton",
+      "appearance": {
+        "size": "md",
+        "description": {
+          "color": "#757575",
+          "variant": "12px",
+          "weight": "400"
+        },
+        "styles": {
+          "padding": {
+            "all": "0px"
+          },
+          "margin": {
+            "all": "0px"
+          },
+          "borderColor": "#2C2C2C",
+          "borderWidth": {
+            "all": "1px"
+          },
+          "width": "340px",
+          "height": "51px"
+        },
+        "label": {
+          "color": "#1E1E1E",
+          "variant": "24px",
+          "weight": "400"
+        }
+      },
+      "content": {
+        "label": "Label",
+        "description": "Description",
+        "checked": true
+      }
+    },
+    "visibility": {
+      "value": true
+    },
+    "dpOn": [],
+    "displayName": "RadioButton_0d5ph",
+    "dataSourceIds": [],
+    "id": "terms-radio-1",
+    "parentId": "root_id"
+  }
+}
