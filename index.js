@@ -35,13 +35,32 @@ const fontSizeTokens = {
   'display-2xl': 72
 };
 
+// Spacing token mapping for padding and margin
+const spacingMapping = {
+  '0px': { padding: 'p-0', margin: 'm-0' },
+  '2px': { padding: 'p-xxs', margin: 'm-xxs' },
+  '4px': { padding: 'p-xs', margin: 'm-xs' },
+  '6px': { padding: 'p-sm', margin: 'm-sm' },
+  '8px': { padding: 'p-md', margin: 'm-md' },
+  '12px': { padding: 'p-lg', margin: 'm-lg' },
+  '16px': { padding: 'p-xl', margin: 'm-xl' },
+  '20px': { padding: 'p-2xl', margin: 'm-2xl' },
+  '24px': { padding: 'p-3xl', margin: 'm-3xl' },
+  '32px': { padding: 'p-4xl', margin: 'm-4xl' },
+  '40px': { padding: 'p-5xl', margin: 'm-5xl' },
+  '48px': { padding: 'p-6xl', margin: 'm-6xl' },
+  '84px': { padding: 'p-[84px]', margin: 'm-[84px]' },
+  '96px': { padding: 'p-9xl', margin: 'm-9xl' },
+  'auto': { padding: 'p-auto', margin: 'm-auto' }
+};
+
 // Function to map pixel size to the closest smaller border size token
 function mapToBorderSizeToken(pxSize) {
   const sizes = Object.entries(borderSizeTokens);
   const largerSize = sizes.find(([_, size]) => size > pxSize);
-  if (!largerSize) return sizes[sizes.length - 1][0]; // Use largest if pxSize exceeds all
+  if (!largerSize) return sizes[sizes.length - 1][0];
   const largerIndex = sizes.indexOf(largerSize);
-  if (largerIndex === 0) return sizes[0][0]; // Use smallest if pxSize is less than all
+  if (largerIndex === 0) return sizes[0][0];
   const justSmaller = sizes[largerIndex - 1];
   return justSmaller[1] === pxSize ? justSmaller[0] : justSmaller[0];
 }
@@ -49,22 +68,92 @@ function mapToBorderSizeToken(pxSize) {
 // Function to map numeric weight to font weight token
 function mapToFontWeightToken(weight) {
   const mapping = fontWeightTokens.find(({ range }) => weight >= range[0] && weight <= range[1]);
-  return mapping ? mapping.token : 'regular'; // Default to 'regular' if no match
+  return mapping ? mapping.token : 'regular';
 }
 
 // Function to map pixel size to the closest smaller font size token
 function mapToFontSizeToken(pxSize) {
   const sizes = Object.entries(fontSizeTokens);
   const largerSize = sizes.find(([_, size]) => size > pxSize);
-  if (!largerSize) return sizes[sizes.length - 1][0]; // Use largest if pxSize exceeds all
+  if (!largerSize) return sizes[sizes.length - 1][0];
   const largerIndex = sizes.indexOf(largerSize);
-  if (largerIndex === 0) return sizes[0][0]; // Use smallest if pxSize is less than all
+  if (largerIndex === 0) return sizes[0][0];
   const justSmaller = sizes[largerIndex - 1];
   return justSmaller[1] === pxSize ? justSmaller[0] : justSmaller[0];
 }
 
+// Function to map pixel size to the closest smaller spacing token
+function mapToSpacingToken(pxSize, type = 'padding', direction = 'all') {
+  const sizes = Object.entries(spacingMapping)
+    .filter(([key]) => key !== 'auto')
+    .map(([key, value]) => [parseInt(key), value[type]]);
+  const largerSize = sizes.find(([size]) => size > pxSize);
+  if (!largerSize) return spacingMapping['96px'][type];
+  const largerIndex = sizes.indexOf(largerSize);
+  if (largerIndex === 0) return spacingMapping['0px'][type];
+  const justSmaller = sizes[largerIndex - 1];
+  let baseToken = spacingMapping[`${justSmaller[0]}px`][type];
+
+  if (direction !== 'all') {
+    const prefix = type === 'padding' ? 'p' : 'm';
+    let directionalPrefix;
+    switch (direction) {
+      case 't': directionalPrefix = prefix === 'p' ? 'pt' : 'mt'; break;
+      case 'r': directionalPrefix = prefix === 'p' ? 'pe' : 'me'; break;
+      case 'b': directionalPrefix = prefix === 'p' ? 'pb' : 'mb'; break;
+      case 'l': directionalPrefix = prefix === 'p' ? 'ps' : 'ms'; break;
+      case 'x': directionalPrefix = prefix === 'p' ? 'px' : 'mx'; break;
+      case 'y': directionalPrefix = prefix === 'p' ? 'py' : 'my'; break;
+      default: directionalPrefix = prefix;
+    }
+    baseToken = baseToken.replace(`${prefix}-`, `${directionalPrefix}-`);
+  }
+  return baseToken;
+}
+
+// Function to determine padding/margin token structure
+function getSpacingTokenStructure(top, right, bottom, left, type = 'padding') {
+  // Check if all directions are zero
+  if (top === 0 && right === 0 && bottom === 0 && left === 0) {
+    return null; // Return null to indicate the field should be omitted
+  }
+
+  // Check if raw pixel values are the same
+  if (top === right && right === bottom && bottom === left) {
+    return { all: mapToSpacingToken(top, type, 'all') };
+  }
+
+  // Map each direction to its token
+  const mappedTop = mapToSpacingToken(top, type, 't');
+  const mappedRight = mapToSpacingToken(right, type, 'r');
+  const mappedBottom = mapToSpacingToken(bottom, type, 'b');
+  const mappedLeft = mapToSpacingToken(left, type, 'l');
+
+  // Double-check if mapped tokens are the same
+  if (mappedTop === mappedRight && mappedRight === mappedBottom && mappedBottom === mappedLeft) {
+    return { all: mapToSpacingToken(top, type, 'all') };
+  }
+
+  // Check if horizontal (left/right) and vertical (top/bottom) are the same
+  const mappedHorizontal = mapToSpacingToken(left, type, 'x');
+  const mappedVertical = mapToSpacingToken(top, type, 'y');
+  if (mappedLeft === mappedRight && mappedTop === mappedBottom) {
+    return {
+      x: mappedHorizontal,
+      y: mappedVertical
+    };
+  }
+
+  // Use individual directions
+  return {
+    t: mappedTop,
+    r: mappedRight,
+    b: mappedBottom,
+    l: mappedLeft
+  };
+}
+
 async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
-  // Helper function to convert RGBA to hex
   function rgbaToHex(r, g, b, a) {
     const toHex = (value) => {
       const hex = Math.round(value * 255).toString(16);
@@ -73,7 +162,6 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
     return `#${toHex(r)}${toHex(g)}${toHex(b)}${a < 1 ? toHex(a) : ""}`.toUpperCase();
   }
 
-  // Extract nodes
   const nodes = figmaJson.Result?.nodes || figmaJson.nodes || {};
   const nodeKey = Object.keys(nodes)[0];
   if (!nodeKey) throw new Error('No nodes found in Figma JSON');
@@ -81,82 +169,92 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
   if (!radioInstance) throw new Error('Component instance not found');
   const props = radioInstance.componentProperties || {};
 
-  // Find child frames and nodes
-  // For Checkbox structure
   const textFrame = radioInstance.children?.find(child => child.name === "Text and supporting text")?.children || [];
   const inputFrame = radioInstance.children?.find(child => child.name === "Input")?.children || [];
   const textNode = textFrame.find(child => child.name === "Text") || {};
   const supportingTextNode = textFrame.find(child => child.name === "Supporting text") || {};
   const checkboxBaseNode = inputFrame.find(child => child.name === "_Checkbox base") || {};
 
-  // For Radio Field structure
   const checkboxFrame = radioInstance.children?.find(child => child.name === "Checkbox and Label")?.children || [];
   const descriptionFrame = radioInstance.children?.find(child => child.name === "Description Row")?.children || [];
   const radioFieldTextNode = checkboxFrame.find(child => child.name === "Label") || {};
   const radioFieldSupportingTextNode = descriptionFrame.find(child => child.name === "Description") || {};
   const radioShapeNode = checkboxFrame.find(child => child.name === "Radio") || {};
 
-  // Use Checkbox structure if available, else Radio Field
   const finalTextNode = textNode.id ? textNode : radioFieldTextNode;
   const finalSupportingTextNode = supportingTextNode.id ? supportingTextNode : radioFieldSupportingTextNode;
   const finalShapeNode = checkboxBaseNode.id ? checkboxBaseNode : radioShapeNode;
 
-  // Extract label color
   let labelColorObj = getSolidColorFromFills(finalTextNode.fills) || { r: 0.11764705926179886, g: 0.11764705926179886, b: 0.11764705926179886, a: 1 };
   const labelHex = rgbaToHex(labelColorObj.r, labelColorObj.g, labelColorObj.b, labelColorObj.a);
 
-  // Extract description color
   let descriptionColorObj = getSolidColorFromFills(finalSupportingTextNode.fills) || { r: 0.4588235318660736, g: 0.4588235318660736, b: 0.4588235318660736, a: 1 };
   const descriptionHex = rgbaToHex(descriptionColorObj.r, descriptionColorObj.g, descriptionColorObj.b, descriptionColorObj.a);
 
-  // Extract background color
   let backgroundColorObj = getSolidColorFromFills(radioInstance.fills) || { r: 0, g: 0, b: 0, a: 0 };
   const backgroundHex = backgroundColorObj.a > 0 ? rgbaToHex(backgroundColorObj.r, backgroundColorObj.g, backgroundColorObj.b, backgroundColorObj.a) : 'transparent';
 
-  // Extract border properties from root instance
   let borderColorObj = getSolidColorFromStrokes(radioInstance.strokes) || { r: 0.1725490242242813, g: 0.1725490242242813, b: 0.1725490242242813, a: 1 };
   const borderHex = rgbaToHex(borderColorObj.r, borderColorObj.g, borderColorObj.b, borderColorObj.a);
   const borderWidthPx = radioInstance.strokeWeight || 0;
 
-  // Extract properties
   const size = getPropertyValue(props, "Size", "md").toLowerCase();
   const isDisabled = getPropertyValue(props, "State") === "Disabled";
   const checked = getPropertyValue(props, "Checked") === "True" || getPropertyValue(props, "Value Type") === "Checked";
-  // Prioritize node characters over componentProperties
   const label = overrides.label || finalTextNode.characters || getPropertyValue(props, "Text") || getPropertyValue(props, "Label") || "";
   const description = overrides.description || finalSupportingTextNode.characters || getPropertyValue(props, "Hint Text") || getPropertyValue(props, "Description") || "";
   const defaultValue = overrides.defaultValue || getPropertyValue(props, "DefaultValue");
   const id = overrides.id || generateId("terms-radio-");
 
-  // Map font size and weight
   const labelFontSize = finalTextNode.style?.fontSize || 0;
   const descriptionFontSize = finalSupportingTextNode.style?.fontSize || 0;
   const labelFontWeight = finalTextNode.style?.fontWeight || (finalTextNode.boundVariables?.fontWeight?.[0]?.id ? finalTextNode.style?.fontWeight : 0);
   const descriptionFontWeight = finalSupportingTextNode.style?.fontWeight || (finalSupportingTextNode.boundVariables?.fontWeight?.[0]?.id ? finalSupportingTextNode.style?.fontWeight : 0);
 
-  // Map to tokens
   const labelVariant = mapToFontSizeToken(labelFontSize);
   const descriptionVariant = mapToFontSizeToken(descriptionFontSize);
   const labelWeight = mapToFontWeightToken(labelFontWeight);
   const descriptionWeight = mapToFontWeightToken(descriptionFontWeight);
   const borderWidthToken = { all: mapToBorderSizeToken(borderWidthPx) };
 
-  // Map layout properties
   const widthPx = Math.round(radioInstance.absoluteBoundingBox?.width || 0);
   const heightPx = Math.round(radioInstance.absoluteBoundingBox?.height || 0);
-  const paddingPx = radioInstance.paddingTop ?? radioInstance.paddingBottom ?? radioInstance.paddingLeft ?? radioInstance.paddingRight ?? 0;
-  const marginPx = 0;
+  const paddingTop = radioInstance.paddingTop ?? 0;
+  const paddingRight = radioInstance.paddingRight ?? 0;
+  const paddingBottom = radioInstance.paddingBottom ?? 0;
+  const paddingLeft = radioInstance.paddingLeft ?? 0;
+  const marginTop = 0;
+  const marginRight = 0;
+  const marginBottom = 0;
+  const marginLeft = 0;
   const widthClass = widthPx ? `${widthPx}px` : "0px";
   const heightClass = heightPx ? `${heightPx}px` : "0px";
-  const paddingToken = paddingPx ? { all: `${paddingPx}px` } : { all: "0px" };
-  const marginToken = { all: "0px" };
 
-  // Build content object
+  const paddingToken = getSpacingTokenStructure(paddingTop, paddingRight, paddingBottom, paddingLeft, 'padding');
+  const marginToken = getSpacingTokenStructure(marginTop, marginRight, marginBottom, marginLeft, 'margin');
+
+  // Log spacing values for debugging
+  console.log('Spacing Values:', {
+    padding: { top: paddingTop, right: paddingRight, bottom: paddingBottom, left: paddingLeft, token: paddingToken },
+    margin: { top: marginTop, right: marginRight, bottom: marginBottom, left: marginLeft, token: marginToken }
+  });
+
   const content = {};
   if (label) content.label = label;
   if (description) content.description = description;
   if (defaultValue) content.defaultValue = defaultValue;
   content.checked = checked;
+
+  // Build styles object, omitting padding and margin if they are null
+  const styles = {
+    backgroundColor: isDisabled ? '#CCCCCC' : backgroundHex,
+    borderColor: isDisabled ? '#CCCCCC' : borderHex,
+    borderWidth: borderWidthToken,
+    width: widthClass,
+    height: heightClass
+  };
+  if (paddingToken) styles.padding = paddingToken;
+  if (marginToken) styles.margin = marginToken;
 
   return {
     [id]: {
@@ -169,15 +267,7 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
             variant: descriptionVariant,
             weight: descriptionWeight
           },
-          styles: {
-            padding: paddingToken,
-            margin: marginToken,
-            backgroundColor: isDisabled ? '#CCCCCC' : backgroundHex,
-            borderColor: isDisabled ? '#CCCCCC' : borderHex,
-            borderWidth: borderWidthToken,
-            width: widthClass,
-            height: heightClass
-          },
+          styles,
           label: {
             color: isDisabled ? '#CCCCCC' : labelHex,
             variant: labelVariant,
@@ -198,7 +288,6 @@ async function convertFigmaRadioButtonToUnify(figmaJson, overrides = {}) {
   };
 }
 
-// Helper Functions
 function getSolidColorFromFills(fills) {
   if (Array.isArray(fills)) {
     const solid = fills.find(f => f.type === 'SOLID' && (f.visible === undefined || f.visible === true));
