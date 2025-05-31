@@ -3,35 +3,35 @@
     "component": {
       "componentType": "RadioButton",
       "appearance": {
-        "size": "sm",
+        "size": "md",
         "description": {
-          "color": "#475467",
-          "variant": "12px",
+          "color": "#757575",
+          "variant": "16px",
           "weight": "400"
         },
         "styles": {
           "padding": {
-            "all": "8px"
+            "all": "0px"
           },
           "margin": {
             "all": "0px"
           },
-          "borderColor": "#2C2C2C",
+          "borderColor": "#000000",
           "borderWidth": {
-            "all": "1px"
+            "all": "2px"
           },
-          "width": "344px",
-          "height": "36px"
+          "width": "340px",
+          "height": "50px"
         },
         "label": {
-          "color": "#344054",
-          "variant": "14px",
-          "weight": "500"
+          "color": "#1E1E1E",
+          "variant": "20px",
+          "weight": "600"
         }
       },
       "content": {
-        "label": "Remember me",
-        "description": "Save my login details for next time.",
+        "label": "Label",
+        "description": "Description",
         "checked": true
       }
     },
