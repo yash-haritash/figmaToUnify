@@ -1,0 +1,127 @@
+Mappings
+Border size
+
+border-0  -> none
+border-1  -> 1px
+border-2  -> 2px
+border-3  -> 3px
+border-4  -> 4px
+
+Weights
+
+light -> 
+regular ->
+medium ->
+semi-bold -> 
+bold ->
+
+Variant
+
+text-xxxs -> 10px
+text-xxs -> 11px
+text-xs -> 12px
+text-sm -> 14px
+text-md -> 16px
+text-lg -> 18px
+text-xl -> 20px
+display-xs -> 24px
+display-sm -> 30px
+display-md -> 44px
+display-lg -> 48px
+display-xl -> 60px
+display-2xl ->72px
+
+Margin / paddin (m for margin respectively p for padding)
+
+All -> "margin": {
+                                        "all": "m-9xl"
+                                    },
+
+Horizontal - >"margin": {
+                                        "x": "mx-9xl"
+                                    },
+
+
+Vertical - >"margin": {
+                                        "y": "my-9xl"
+                                    },
+
+Top -> "margin": {
+                                        "t": "mt-9xl"
+                                    },
+
+Right ->  "margin": {
+                                        "r": "me-9xl"
+                                    },
+\
+Left -> "margin": {
+                                        "l": "ms-9xl"
+                                    },
+Bottom -> "margin": {
+                                        "b": "mb-9xl"
+                                    },
+
+
+const spacingMapping = {
+  '0px': {
+    padding: 'p-0',
+    margin: 'm-0'
+  },
+  '2px': {
+    padding: 'p-xxs',
+    margin: 'm-xxs'
+  },
+  '4px': {
+    padding: 'p-xs',
+    margin: 'm-xs'
+  },
+  '6px': {
+    padding: 'p-sm',
+    margin: 'm-sm'
+  },
+  '8px': {
+    padding: 'p-md',
+    margin: 'm-md'
+  },
+  '12px': {
+    padding: 'p-lg',
+    margin: 'm-lg'
+  },
+  '16px': {
+    padding: 'p-xl',
+    margin: 'm-xl'
+  },
+  '20px': {
+    padding: 'p-2xl',
+    margin: 'm-2xl'
+  },
+  '24px': {
+    padding: 'p-3xl',
+    margin: 'm-3xl'
+  },
+  '32px': {
+    padding: 'p-4xl',
+    margin: 'm-4xl'
+  },
+  '40px': {
+    padding: 'p-5xl',
+    margin: 'm-5xl'
+  },
+  '48px': {
+    padding: 'p-6xl',
+    margin: 'm-6xl'
+  },
+  '84px': {
+    padding: 'p-[84px]',
+    margin: 'm-[84px]'
+  },
+  '96px': {
+    padding: 'p-9xl',
+    margin: 'm-9xl'
+  },
+  'auto': {
+    padding: 'p-auto',
+    margin: 'm-auto'
+  }
+};
+
